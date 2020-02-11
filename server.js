@@ -1,27 +1,27 @@
 /* REQUIRES */
-const express = require('express');
-const bodyparser = require('body-parser');
-const cors = require('cors');
-const mongoose = require('mongoose');
+import express from 'express';
+import { json } from 'body-parser';
+import cors from 'cors';
+import { connect, set, model } from 'mongoose';
 
 /* CONFIG */
 require('dotenv').config();
-mongoose.connect(process.env.MONGO, { useNewUrlParser: true, dbName: 'bubbler' });
-mongoose.set('useFindAndModify', false);
+connect(process.env.MONGO, { useNewUrlParser: true, dbName: 'bubbler' });
+set('useFindAndModify', false);
 
 /* MODULES */
-const session = require('./session');
+import { passport, google_login, google_callback, generateToken, check } from './session';
 
 const app = express();
 
 /* SOCKET.IO */
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
-const iojwt = require('socketio-jwt');
+import { authorize } from 'socketio-jwt';
 
 let io_users = [];
 
-io.use(iojwt.authorize({
+io.use(authorize({
   secret: process.env.JWT_SECRET,
   handshake: true
 }));
@@ -34,26 +34,26 @@ io.on('connection', function (socket) {
 })
 
 /* USES */
-app.use(bodyparser.json());
+app.use(json());
 app.use(cors());
-app.use(session.passport.initialize());
+app.use(passport.initialize());
 
 /* MODELS */
-const chat = mongoose.model('chat', { id: String, updated: Date, items: [] });
+const chat = model('chat', { id: String, updated: Date, items: [] });
 
 /* ROUTES */
 app.get('/', function(req, res) {
 	res.send('<h1>Welcome to the Bubbler API!</h1><br><a href="https://bubbler.netlify.com">https://bubbler.netlify.com</a>');
 });
 
-app.get('/auth/google', session.google_login);
+app.get('/auth/google', google_login);
 
-app.get('/auth/google/callback', session.google_callback, function(req, res) {
-	req.token = session.generateToken(req.user);
+app.get('/auth/google/callback', google_callback, function(req, res) {
+	req.token = generateToken(req.user);
 	res.redirect('https://bubbler.netlify.com/?token=' + req.token);
 })
 
-app.get('/load', session.check, async function(req, res) {
+app.get('/load', check, async function(req, res) {
   res.json({ user: req.user, user_list: await chat.findOne({ id: req.user.id }) });
 })
 
