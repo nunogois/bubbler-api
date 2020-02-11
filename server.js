@@ -39,7 +39,7 @@ app.use(cors());
 app.use(passport.initialize());
 
 /* MODELS */
-const chat = model('chat', { id: String, updated: Date, items: [] });
+const chat = mongoose.model('chat', { id: String, updated: Date, users: [], messages: [] });
 
 /* ROUTES */
 app.get('/', function(req, res) {
